@@ -58,7 +58,7 @@ bool DecoPopup::init(std::vector<SelObj> sel) {
         maxX = std::max(maxX, o.x); maxY = std::max(maxY, o.y);
         m_allowed.insert(o.id);
     }
-    m_origin = {minX, minY};
+    m_origin = CCPoint(minX, minY);
     m_wGrid = (maxX - minX) / GRID;
     m_hGrid = (maxY - minY) / GRID;
     for (int i : {1, 2, 3, 4, 5, 6, 7, 40}) m_allowed.insert(i);
@@ -263,7 +263,7 @@ void DecoPopup::applyDeco(std::string const& content) {
         sx = std::clamp(std::fabs(sx), 0.1f, 10.f);
         sy = std::clamp(std::fabs(sy), 0.1f, 10.f);
 
-        CCPoint pos = {m_origin.x + static_cast<float>(gx) * GRID, m_origin.y + static_cast<float>(gy) * GRID};
+        CCPoint pos = CCPoint(m_origin.x + static_cast<float>(gx) * GRID, m_origin.y + static_cast<float>(gy) * GRID);
         auto obj = lel->createObject(id, pos, false);
         if (!obj) continue;
 
