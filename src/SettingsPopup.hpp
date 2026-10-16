@@ -29,7 +29,8 @@ protected:
     }
 
     TextInput* addInput(char const* hint, float y, std::string const& value) {
-        auto in = TextInput::create(340.f, hint, "bigFont.fnt");
+        auto in = TextInput::create(340.f, hint, "chatFont.fnt");
+        in->setCommonFilter(CommonFilter::Any);
         in->setMaxCharCount(2000);
         in->setString(value);
         m_mainLayer->addChildAtPosition(in, Anchor::Center, {0.f, y});

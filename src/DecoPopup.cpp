@@ -68,7 +68,7 @@ bool DecoPopup::init(std::vector<SelObj> sel) {
     info->setScale(.8f);
     m_mainLayer->addChildAtPosition(info, Anchor::Top, {0.f, -45.f});
 
-    m_prompt = TextInput::create(330.f, "Describe the deco: neon cyberpunk, spooky forest...", "bigFont.fnt");
+    m_prompt = TextInput::create(330.f, "Describe the deco: neon cyberpunk, spooky forest...", "chatFont.fnt");
     m_prompt->setMaxCharCount(300);
     m_prompt->setString(cfg::get("last-prompt"));
     m_mainLayer->addChildAtPosition(m_prompt, Anchor::Center, {0.f, 22.f});
