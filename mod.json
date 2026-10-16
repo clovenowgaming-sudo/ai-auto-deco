@@ -1,0 +1,39 @@
+{
+	"geode": "5.8.2",
+	"gd": {
+		"android": "2.2081",
+		"win": "2.2081",
+		"mac": "2.2081",
+		"ios": "2.2081"
+	},
+	"id": "vinz.ai-auto-deco",
+	"name": "AI Auto Deco",
+	"version": "v1.0.0",
+	"developer": "Vinz",
+	"description": "Select blocks/structures in the editor and let an AI decorate them.",
+	"tags": ["editor", "utility"],
+	"settings": {
+		"no-touch": {
+			"type": "bool",
+			"name": "Make deco No-Touch",
+			"description": "Generated objects get the No Touch flag so they never change gameplay.",
+			"default": true
+		},
+		"max-objects": {
+			"type": "int",
+			"name": "Max deco objects",
+			"description": "Upper limit of objects the AI may add per run.",
+			"default": 300,
+			"min": 10,
+			"max": 1000
+		},
+		"max-tokens": {
+			"type": "int",
+			"name": "Max tokens",
+			"description": "Sent as max_tokens to the API. 0 = don't send.",
+			"default": 6000,
+			"min": 0,
+			"max": 64000
+		}
+	}
+}
