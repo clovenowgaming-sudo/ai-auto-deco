@@ -1,6 +1,7 @@
 #pragma once
 #include <Geode/Geode.hpp>
 #include <Geode/utils/web.hpp>
+#include <Geode/utils/async.hpp>
 #include <set>
 #include <vector>
 #include "Config.hpp"
@@ -25,7 +26,7 @@ protected:
     CCLabelBMFont* m_status = nullptr;
     CCSprite* m_spinner = nullptr;
     CCMenuItemSpriteExtra* m_goBtn = nullptr;
-    EventListener<web::WebTask> m_listener;
+    async::TaskHolder<web::WebResponse> m_listener;
     bool m_busy = false;
     float m_elapsed = 0.f;
 
@@ -35,7 +36,7 @@ protected:
     void tick(float dt);
     void setBusy(bool busy);
     void setStatus(std::string const& text, bool error = false);
-    void onWeb(web::WebTask::Event* e);
+    void onWeb(web::WebResponse res);
     void fail(std::string const& msg);
     void applyDeco(std::string const& content);
     std::string buildUserMessage(std::string const& style);

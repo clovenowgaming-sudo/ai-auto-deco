@@ -190,8 +190,9 @@ void DecoPopup::onGo(CCObject*) {
 
     setBusy(true);
     setStatus("Reading structure");
-    m_listener.bind(this, &DecoPopup::onWeb);
-    m_listener.setFilter(req.post(cfg::endpoint()));
+    m_listener.spawn(req.post(cfg::endpoint()), [this](web::WebResponse res) {
+        this->onWeb(std::move(res));
+    });
 }
 
 void DecoPopup::fail(std::string const& msg) {
@@ -200,12 +201,10 @@ void DecoPopup::fail(std::string const& msg) {
     log::error("AI Auto Deco: {}", msg);
 }
 
-void DecoPopup::onWeb(web::WebTask::Event* e) {
-    auto* res = e->getValue();
-    if (!res) return;
+void DecoPopup::onWeb(web::WebResponse res) {
 
-    if (!res->ok()) {
-        std::string detail = res->string().unwrapOr("");
+    if (!res.ok()) {
+        std::string detail = res.string().unwrapOr("");
         auto jr = matjson::parse(detail);
         if (jr.isOk()) {
             auto j = jr.unwrap();
@@ -215,11 +214,11 @@ void DecoPopup::onWeb(web::WebTask::Event* e) {
             }
         }
         if (detail.size() > 140) detail = detail.substr(0, 140) + "...";
-        fail(fmt::format("HTTP {}: {}", res->code(), detail));
+        fail(fmt::format("HTTP {}: {}", res.code(), detail));
         return;
     }
 
-    auto jr = res->json();
+    auto jr = res.json();
     if (jr.isErr()) { fail("Response is not valid JSON"); return; }
     auto j = jr.unwrap();
     std::string content;
