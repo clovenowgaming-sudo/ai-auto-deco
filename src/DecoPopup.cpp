@@ -154,6 +154,11 @@ void DecoPopup::refreshStyleLabel() {
 
 void DecoPopup::onLearn(CCObject*) {
     if (m_busy) return;
+    if (m_sel.size() > 400) {
+        Notification::create(fmt::format("Too many objects ({}). Select a small sample, max 400.", m_sel.size()),
+            NotificationIcon::Error)->show();
+        return;
+    }
     std::map<int, int> usage;
     for (auto& o : m_sel) usage[o.id]++;
     std::string t = fmt::format("Reference size: {:.0f} x {:.0f} cells. Id usage: ", m_wGrid + 1, m_hGrid + 1);
@@ -164,23 +169,24 @@ void DecoPopup::onLearn(CCObject*) {
     }
     t += "\nRows [id,x,y,rot,sx,sy,fx,fy,z]:\n[";
     size_t n = m_sel.size();
-    size_t stride = n > 300 ? (n + 299) / 300 : 1;
+    size_t stride = n > 100 ? (n + 99) / 100 : 1;
     bool first = true;
     for (size_t i = 0; i < n; i += stride) {
         auto& o = m_sel[i];
         if (!first) t += ",";
         first = false;
-        t += fmt::format("[{},{:.2f},{:.2f},{:.0f},{:.2f},{:.2f},{},{},{}]",
+        t += fmt::format("[{},{:.1f},{:.1f},{:.0f},{:.1f},{:.1f},{},{},{}]",
             o.id, (o.x - m_origin.x) / GRID, (o.y - m_origin.y) / GRID, o.r, o.sx, o.sy,
             o.fx ? 1 : 0, o.fy ? 1 : 0, o.z);
     }
     t += "]";
+    size_t saved = (n + stride - 1) / stride;
     cfg::set("style-sample", t);
-    cfg::set("style-count", std::to_string(n));
+    cfg::set("style-count", std::to_string(saved));
     cfg::set("style-ids", idList);
     for (int i : cfg::parseIds(idList)) m_allowed.insert(i);
     refreshStyleLabel();
-    Notification::create(fmt::format("Style saved ({} objects)", n), NotificationIcon::Success)->show();
+    Notification::create(fmt::format("Style saved ({} objects)", saved), NotificationIcon::Success)->show();
 }
 
 void DecoPopup::onClearStyle(CCObject*) {

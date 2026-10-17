@@ -31,7 +31,7 @@
 			"type": "int",
 			"name": "Max tokens",
 			"description": "Sent as max_tokens to the API. 0 = don't send.",
-			"default": 12000,
+			"default": 4000,
 			"min": 0,
 			"max": 64000
 		}
