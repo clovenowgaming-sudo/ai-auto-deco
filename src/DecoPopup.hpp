@@ -24,6 +24,7 @@ protected:
 
     TextInput* m_prompt = nullptr;
     CCLabelBMFont* m_status = nullptr;
+    CCLabelBMFont* m_styleLabel = nullptr;
     CCSprite* m_spinner = nullptr;
     CCMenuItemSpriteExtra* m_goBtn = nullptr;
     async::TaskHolder<web::WebResponse> m_listener;
@@ -33,6 +34,9 @@ protected:
     bool init(std::vector<SelObj> sel);
     void onGo(CCObject*);
     void onSettings(CCObject*);
+    void onLearn(CCObject*);
+    void onClearStyle(CCObject*);
+    void refreshStyleLabel();
     void tick(float dt);
     void setBusy(bool busy);
     void setStatus(std::string const& text, bool error = false);

@@ -28,7 +28,7 @@ COORDINATES
 OPS (JSON objects)
 {"op":"rect","id":1,"x":0,"y":0,"w":6,"h":1,"mode":"stretch","z":-4}
   A region whose bottom-left cell center is (x,y), size w by h cells.
-  mode "stretch" (default): ONE block stretched to fill the region. Best for clean walls, pillars, beams, roofs, backdrops. Use mostly this.
+  mode "stretch" (default): ONE block stretched to fill the region. Only for big plain backdrop shapes (behind, negative z). For everything visible prefer tiles / lines of small pieces.
   mode "fill": tiles of blocks. mode "outline": tiles only along the border. Optional "s" = tile size (default 1).
 {"op":"line","id":40,"x":0,"y":0,"dx":1,"dy":1,"n":5,"s":1,"r":0,"z":-3}
   n objects starting at (x,y), stepping (dx,dy): stairs, rows, columns, diagonals, repeated trims.
@@ -43,6 +43,8 @@ RULES
 3. Do not cover the structure itself. Wrap it: trims along its top and sides, base, roof or crown above it, supports beside it, backdrop shapes behind it (negative z).
 4. Work big to small: backdrop silhouettes, then main shapes, then trims and small accents. About 15 to 50 ops. Quality over quantity. Keep everything tidy and symmetric, with positions on whole or half units.
 5. Follow the STYLE literally. If the style names a thing (temple, castle, forest, tower, cyberpunk city), the result must clearly read as that thing.
+
+6. If a STYLE REFERENCE is given it overrides everything about the look: reuse its ids, scales, rotations, z layers and placement habits (fringe along top edges, hanging pieces under platforms, background shapes behind, regular spacing). Tile small pieces with line ops along the structure's edges; use rect stretch only for large plain backdrops.
 
 OUTPUT: ONE JSON object only, no prose, no markdown, no code fences:
 {"concept":"one sentence describing the design","ops":[ ... ]})SYS";
@@ -82,6 +84,7 @@ bool DecoPopup::init(std::vector<SelObj> sel) {
     m_hGrid = (maxY - minY) / GRID;
     for (int i : {1, 2, 3, 4, 5, 6, 7, 40}) m_allowed.insert(i);
     for (int i : cfg::parseIds(cfg::get("extra-ids"))) m_allowed.insert(i);
+    for (int i : cfg::parseIds(cfg::get("style-ids"))) m_allowed.insert(i);
 
     std::string idText;
     for (int i : selIds) {
@@ -121,8 +124,77 @@ bool DecoPopup::init(std::vector<SelObj> sel) {
     auto gearBtn = CCMenuItemSpriteExtra::create(gear, this, menu_selector(DecoPopup::onSettings));
     m_buttonMenu->addChildAtPosition(gearBtn, Anchor::TopRight, {-22.f, -22.f});
 
+    m_styleLabel = CCLabelBMFont::create("", "chatFont.fnt");
+    m_styleLabel->setScale(.6f);
+    m_mainLayer->addChildAtPosition(m_styleLabel, Anchor::Center, {0.f, -4.f});
+
+    auto learn = ButtonSprite::create("Learn style", "bigFont.fnt", "GJ_button_04.png", .5f);
+    auto learnBtn = CCMenuItemSpriteExtra::create(learn, this, menu_selector(DecoPopup::onLearn));
+    m_buttonMenu->addChildAtPosition(learnBtn, Anchor::Bottom, {-120.f, 26.f});
+
+    auto clr = ButtonSprite::create("Clear", "bigFont.fnt", "GJ_button_06.png", .5f);
+    auto clrBtn = CCMenuItemSpriteExtra::create(clr, this, menu_selector(DecoPopup::onClearStyle));
+    m_buttonMenu->addChildAtPosition(clrBtn, Anchor::Bottom, {125.f, 26.f});
+
+    refreshStyleLabel();
     this->schedule(schedule_selector(DecoPopup::tick), .25f);
     return true;
+}
+
+void DecoPopup::refreshStyleLabel() {
+    auto cnt = cfg::get("style-count");
+    if (cnt.empty()) {
+        m_styleLabel->setString("No style reference (select deco + Learn style)");
+        m_styleLabel->setColor({200, 200, 200});
+    } else {
+        m_styleLabel->setString(fmt::format("Style reference: {} objects saved", cnt).c_str());
+        m_styleLabel->setColor({120, 255, 140});
+    }
+}
+
+void DecoPopup::onLearn(CCObject*) {
+    if (m_busy) return;
+    std::map<int, int> usage;
+    for (auto& o : m_sel) usage[o.id]++;
+    std::string t = fmt::format("Reference size: {:.0f} x {:.0f} cells. Id usage: ", m_wGrid + 1, m_hGrid + 1);
+    std::string idList;
+    for (auto& [id, c] : usage) {
+        t += fmt::format("{}x{} ", id, c);
+        idList += (idList.empty() ? "" : ",") + std::to_string(id);
+    }
+    t += "\nRows [id,x,y,rot,sx,sy,fx,fy,z]:\n[";
+    size_t n = m_sel.size();
+    size_t stride = n > 300 ? (n + 299) / 300 : 1;
+    bool first = true;
+    for (size_t i = 0; i < n; i += stride) {
+        auto& o = m_sel[i];
+        if (!first) t += ",";
+        first = false;
+        t += fmt::format("[{},{:.2f},{:.2f},{:.0f},{:.2f},{:.2f},{},{},{}]",
+            o.id, (o.x - m_origin.x) / GRID, (o.y - m_origin.y) / GRID, o.r, o.sx, o.sy,
+            o.fx ? 1 : 0, o.fy ? 1 : 0, o.z);
+    }
+    t += "]";
+    cfg::set("style-sample", t);
+    cfg::set("style-count", std::to_string(n));
+    cfg::set("style-ids", idList);
+    for (int i : cfg::parseIds(idList)) m_allowed.insert(i);
+    refreshStyleLabel();
+    Notification::create(fmt::format("Style saved ({} objects)", n), NotificationIcon::Success)->show();
+}
+
+void DecoPopup::onClearStyle(CCObject*) {
+    cfg::set("style-sample", "");
+    cfg::set("style-count", "");
+    cfg::set("style-ids", "");
+    refreshStyleLabel();
+    Notification::create("Style cleared", NotificationIcon::Info)->show();
+}
+
+static std::string styleBlock() {
+    auto t = cfg::get("style-sample");
+    if (t.empty()) return "";
+    return "\n\nSTYLE REFERENCE (a sample from a professionally decorated level; coordinates are relative to the sample's own bottom-left, same row format). Study which ids are used, how they are scaled, rotated and layered (z), what sits on top edges, hangs below platforms or sits behind blocks, and the spacing/rhythm. Re-create the SAME visual language around the user's structure with these ids using rect/line/obj ops. Do NOT copy coordinates.\n" + t;
 }
 
 void DecoPopup::onSettings(CCObject*) {
@@ -228,7 +300,7 @@ void DecoPopup::onGo(CCObject*) {
     sys["content"] = systemPrompt();
     auto usr = matjson::Value::object();
     usr["role"] = "user";
-    usr["content"] = buildUserMessage(style);
+    usr["content"] = buildUserMessage(style) + styleBlock();
     msgs.push(sys);
     msgs.push(usr);
     body["messages"] = msgs;
